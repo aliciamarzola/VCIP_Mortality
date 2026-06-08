@@ -1,0 +1,78 @@
+# @package _global_
+# Hiperparâmetros VCIP para MIMIC-IV mortalidade
+# Coorte pequena (≈1.000 treino) → arquitetura conservadora para evitar overfitting
+model:
+  _target_: src.models.vae_model.VAEModel
+  name: VCIP
+  z_dim: 16               # dimensão do estado latente Z_s
+
+  auxiliary:
+    _target_: src.models.auxiliary_model.AuxiliaryModel
+    hidden_dim: 32
+    num_layers: 2
+    hiddens_G_y:
+    - 32
+    hiddens_G_x:
+    - 32
+    lr: 0.001
+
+  inference:
+    _target_: src.models.inference_model.InferenceModel
+    hidden_dim: 32
+    num_layers: 2
+    hiddens_F_mu:
+    - 32
+    hiddens_F_logvar:
+    - 32
+    predict_y_history:
+    - 32
+    do: true              # dropout no inference model
+
+  generative:
+    _target_: src.models.generative_model.GenerativeModel
+    entropy_lambda: 1
+    hidden_dim: 32
+    treatment_hidden_dim: 16
+    num_layers: 2
+    hiddens_F_mu:
+    - 32
+    hiddens_F_logvar:
+    - 32
+    hiddens_decoder:
+    - 32
+    hidden_action_decoder:
+    - 32
+    hidden_action_decoder_step:
+    - 32
+
+  lr: 0.001
+
+exp:
+  seed: 42
+  batch_size: 128         # coorte pequena → batch menor
+  batch_size_val: 64
+  num_samples: 10         # amostras Monte Carlo para ELBO
+  dropout: 0.2
+  epochs: 150             # mais épocas porque coorte menor
+  patience: 25
+  lr: 0.001
+  weight_decay: 1.0e-05
+
+  # ── Pesos do ELBO (Eq. 19 do paper) ─────────────────────────────────────
+  lambda_X: 0.0           # vitais usadas como input mas sem perda de reconstrução
+                          # (predict_X=true mas G_x ignorada via lambda_X=0)
+  lambda_Y: 1.0           # peso da BCE (reconstrução de mortalidade)
+  lambda_kl: 1.0          # peso da divergência KL
+  lambda_step: 0.1        # g-formula: p(a_s|Z_s) passo a passo
+  lambda_action: 1.0      # g-formula: p(â|H_t) sequência completa
+  lambda_hy: 0.5          # auxiliar: predição de Y a partir de H_t
+  lambda_reg: 1.0
+  beta_bound: -10.0       # bound inferior do ELBO para estabilidade
+
+  # ── Inferência ───────────────────────────────────────────────────────────
+  tau: 4                  # horizonte de otimização (igual ao dataset)
+  repeats: 5              # repetições de history_length no CIPDataset
+
+  load_best: true
+  val: true
+  weights_ema: true

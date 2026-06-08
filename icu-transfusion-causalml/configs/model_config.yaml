@@ -1,0 +1,27 @@
+temporal_representation:
+  method: auto
+  fallback: aggregate_features
+  pca:
+    enabled: true
+    n_components: 12
+  minirocket:
+    n_kernels: 256
+
+clustering:
+  algorithm: kmeans
+  minibatch_threshold: 5000
+  k_min: 2
+  k_max: 8
+  seeds:
+    - 13
+    - 42
+    - 101
+  selected_k: auto
+
+counterfactual:
+  method: two_model
+  test_fraction: 0.25
+  model:
+    type: gradient_boosting
+    n_estimators: 100
+    max_depth: 3

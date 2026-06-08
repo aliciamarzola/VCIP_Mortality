@@ -1,0 +1,29 @@
+propensity:
+  model: logistic
+  alternative_model: random_forest
+  caliper: 0.3
+  matching_ratio: 1
+  replace: false
+  trim:
+    enabled: true
+    lower: 0.02
+    upper: 0.98
+  weights:
+    iptw: true
+    overlap: true
+
+meta_learners:
+  methods:
+    - s_learner
+    - t_learner
+    - x_learner
+  base_model: random_forest
+  bootstrap_iterations: 100
+
+evaluation:
+  bootstrap_iterations: 100
+  sensitivity_calipers:
+    - 0.1
+    - 0.2
+    - 0.3
+    - 0.5

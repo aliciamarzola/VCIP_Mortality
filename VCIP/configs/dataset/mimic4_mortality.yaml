@@ -1,0 +1,63 @@
+# @package _global_
+# Dataset config para MIMIC-IV mortalidade com decoder Bernoulli
+dataset:
+  _target_: src.data.mimic4_mortality.dataset.MIMIC4MortalityDatasetCollection
+  name: mimic4_mortality
+
+  # ── Caminhos dos parquets ────────────────────────────────────────────────
+  raw_temporal_path: /home/alicia.chaves/vscode/causality/icu-transfusion-causalml/outputs/raw_temporal.parquet
+  treatment_path:    /home/alicia.chaves/vscode/causality/icu-transfusion-causalml/outputs/target_trial/processed/treatment_assignment.parquet
+  trial_path:        /home/alicia.chaves/vscode/causality/icu-transfusion-causalml/outputs/target_trial/processed/trial_dataset.parquet
+  groups_path:       /home/alicia.chaves/vscode/causality/icu-transfusion-causalml/outputs/target_trial/final_groups/final_group_assignments.parquet
+
+  # ── Dimensões do dataset ─────────────────────────────────────────────────
+  input_size: 11          # 11 sinais vitais/labs (VITALS)
+  treatment_size: 1       # transfused: 0/1
+  output_size: 1          # mortality_anytime: 0/1
+  static_size: 8          # age, sex, bmi, B1, B2, M1, M2, M3
+
+  # ── Modo de tratamento e desfecho ────────────────────────────────────────
+  treatment_mode: multilabel     # Bernoulli para tratamento binário
+  output_mode: bernoulli         # BCE em vez de MSE — veja vae_model.py patch
+
+  # ── Sequências ───────────────────────────────────────────────────────────
+  max_seq_length: 48      # 48 timesteps de 1h = janela de 48h pré-T0
+  min_seq_length: 25      # mínimo após imputação (aplicado em _build_tensors)
+  projection_horizon: 4   # tau = 4 passos de 1h → horizonte de 4h
+
+  # ── Split e reprodutibilidade ────────────────────────────────────────────
+  seed: ${exp.seed}
+  split:
+    val: 0.15
+    test: 0.15
+
+  # ── Configurações de batch ───────────────────────────────────────────────
+  val_batch_size: 128
+  autoregressive: true
+  predict_X: true         # vitais são usadas como input ao encoder de histórico
+                          # LSTM input = input_size(11) + static_size(8) + treatment_size(1) + output_size(1) = 21
+
+exp:
+  seed: 42
+  unscale_rmse: false
+  percentage_rmse: false
+  raw_data_dir: data/raw/mimic4_mortality/
+  processed_data_dir: data/processed/mimic4_mortality/
+  log_dir: my_outputs/mimic4_mortality/${model.name}/${exp.seed}/
+  device: cuda
+  gpus: 1
+  weights_ema: true
+  beta: 0.999
+  clear_tf: false
+  logging: false
+  current_date: ${now:%Y-%m-%d}
+  current_time: ${now:%H-%M-%S}
+  mode: train
+  gpu_resources: 0.5
+  cpu_resources: 4
+  csv_dir: csvs/mimic4_mortality
+  load_data: false
+  tau: 4           # deve ser igual a projection_horizon
+  repeats: 5
+  test: false
+  rank: true

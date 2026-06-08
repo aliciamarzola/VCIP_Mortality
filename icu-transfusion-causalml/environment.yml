@@ -1,0 +1,17 @@
+name: rbc-transfusion-causal
+channels:
+  - conda-forge
+dependencies:
+  - python>=3.10
+  - pandas
+  - numpy
+  - scikit-learn
+  - scipy
+  - matplotlib
+  - pyyaml
+  - pyarrow
+  - duckdb
+  - seaborn
+  - pip
+  - pip:
+      - torch

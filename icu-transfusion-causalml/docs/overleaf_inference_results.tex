@@ -1,0 +1,252 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazil]{babel}
+\usepackage{lmodern}
+\usepackage{geometry}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{xcolor}
+
+\geometry{margin=2.5cm}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=blue,
+    urlcolor=blue
+}
+
+\title{Infer\^encia Causal Temporal da Transfus\~ao de Hem\'acias em Pacientes Cr\'iticos de UTI}
+\author{Projeto de pesquisa em Causal Machine Learning}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Este documento resume a etapa atual de infer\^encia causal desenvolvida a partir do estudo anterior de fenotipagem fisiol\'ogica em transfus\~ao de hem\'acias na UTI. O trabalho anterior construiu coorte, ponto de decis\~ao temporal, representa\c{c}\~oes fisiol\'ogicas com MiniRocket, agrupamentos por K-means e pareamento por escore de propens\~ao. A etapa atual reaproveita esses artefatos para estimar efeitos heterog\^eneos da transfus\~ao, especialmente dentro dos grupos identificados pelo scan de benef\'icio, neutralidade e poss\'ivel malef\'icio. Os resultados indicam que a associa\c{c}\~ao entre transfus\~ao e mortalidade n\~ao \'e homog\^enea: alguns subgrupos apresentam menor mortalidade pareada entre transfundidos, enquanto outros apresentam maior mortalidade ou maior carga de suporte org\^anico.
+\end{abstract}
+
+\section{Contexto do projeto}
+
+O projeto atual \'e uma continua\c{c}\~ao direta do artigo anterior sobre identifica\c{c}\~ao de fen\'otipos cl\'inicos e desfechos da transfus\~ao de hem\'acias em UTI baseada em trajet\'orias fisiol\'ogicas. No artigo anterior, foram utilizadas s\'eries temporais cl\'inicas pr\'e-transfusionais, representa\c{c}\~oes temporais com MiniRocket e clusteriza\c{c}\~ao por K-means. Em seguida, pacientes transfundidos foram comparados com controles por pareamento por escore de propens\~ao dentro dos fen\'otipos.
+
+A nova etapa reorganiza esse resultado como um estudo de infer\^encia causal temporal. Em vez de refazer a constru\c{c}\~ao completa da coorte, o pipeline reaproveita os artefatos j\'a produzidos pelo projeto de fenotipagem: coorte, tabela de $t_0$, embeddings temporais, clusters, pares pareados e tabelas de desfechos. Isso evita recomputa\c{c}\~ao pesada e permite concentrar a an\'alise na pergunta causal.
+
+\section{Pergunta causal}
+
+A pergunta principal \'e:
+
+\begin{quote}
+Qual \'e o efeito causal da transfus\~ao de concentrado de hem\'acias sobre mortalidade e suporte org\^anico em pacientes cr\'iticos de UTI, considerando trajet\'orias fisiol\'ogicas antes do ponto de decis\~ao?
+\end{quote}
+
+A unidade de an\'alise \'e a interna\c{c}\~ao em UTI. O tratamento \'e definido como:
+
+\[
+A =
+\begin{cases}
+1, & \text{paciente recebeu transfus\~ao de hem\'acias;}\\
+0, & \text{paciente controle n\~ao recebeu transfus\~ao.}
+\end{cases}
+\]
+
+O estimando central usado nesta etapa \'e o efeito m\'edio do tratamento nos tratados, estratificado por grupo fisiol\'ogico:
+
+\[
+ATT_g = E[Y(1)-Y(0) \mid A=1, G=g],
+\]
+
+em que $G$ representa o grupo obtido por fenotipagem ou pelo scan de benef\'icio/malef\'icio, $Y(1)$ \'e o desfecho potencial sob transfus\~ao e $Y(0)$ \'e o desfecho potencial sob n\~ao transfus\~ao.
+
+\section{Dados e artefatos utilizados}
+
+A execu\c{c}\~ao analisada reaproveitou os resultados do pipeline anterior de fenotipagem com janela temporal de 48 horas e embedding MiniRocket. A coorte importada continha:
+
+\begin{itemize}
+    \item 40.167 interna\c{c}\~oes em UTI;
+    \item 10.639 pacientes transfundidos;
+    \item 29.528 controles;
+    \item 10.009 pares pareados usados na estimativa pareada principal;
+    \item desfecho prim\'ario: mortalidade em qualquer momento dispon\'ivel no arquivo de desfechos.
+\end{itemize}
+
+Os arquivos centrais da etapa atual s\~ao:
+
+\begin{itemize}
+    \item \texttt{outputs/causal\_inference/processed/}: coorte, tratamento, desfechos e metadados;
+    \item \texttt{outputs/causal\_inference/phenotypes/}: grupos reconstru\'idos a partir dos embeddings e resultado do scan;
+    \item \texttt{outputs/causal\_inference/causal/}: estimativas de efeito por grupo;
+    \item \texttt{outputs/causal\_inference/counterfactual/}: modelos preditivos contrafactuais e estimativas individuais;
+    \item \texttt{outputs/causal\_inference/reports/}: relat\'orios autom\'aticos.
+\end{itemize}
+
+\section{Como a infer\^encia se conecta ao artigo anterior}
+
+O artigo anterior encontrou heterogeneidade cl\'inica: alguns fen\'otipos pareciam se associar a benef\'icio da transfus\~ao, enquanto outros sugeriam pior progn\'ostico ou maior carga de suporte. A etapa atual n\~ao substitui esse achado; ela o transforma em uma pergunta causal mais expl\'icita.
+
+A interpreta\c{c}\~ao correta \'e:
+
+\begin{itemize}
+    \item o artigo anterior descobriu grupos fisiol\'ogicos por trajet\'orias temporais;
+    \item o scan avaliou quais grupos pareciam ter benef\'icio, neutralidade ou malef\'icio;
+    \item a infer\^encia atual estima o efeito da transfus\~ao dentro desses grupos;
+    \item portanto, a infer\^encia est\'a sendo feita sobre subpopula\c{c}\~oes fisiologicamente definidas, n\~ao apenas sobre a coorte inteira.
+\end{itemize}
+
+\section{Resultado global pareado}
+
+Na popula\c{c}\~ao pareada completa, a transfus\~ao esteve associada a menor mortalidade em rela\c{c}\~ao aos controles pareados. A diferen\c{c}a pareada foi de aproximadamente $-6{,}1$ pontos percentuais.
+
+\begin{table}[ht]
+\centering
+\caption{Efeito pareado global da transfus\~ao.}
+\begin{tabular}{lrrrr}
+\toprule
+Desfecho & $n$ pares & Tratados & Controles & Efeito \\
+\midrule
+Mortalidade & 10.009 & 0,385 & 0,446 & -0,061 \\
+Ventila\c{c}\~ao, h & 10.009 & 64,3 & 32,9 & +31,4 \\
+Terapia renal substitutiva & 10.009 & 0,104 & 0,065 & +0,039 \\
+Noradrenalina eq. m\'axima & 10.009 & 0,265 & 0,200 & +0,065 \\
+Perman\^encia na UTI, h & 10.009 & 732,8 & 421,4 & +311,4 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Esse resultado global n\~ao deve ser interpretado isoladamente como evid\^encia de efeito uniforme. Apesar da redu\c{c}\~ao global de mortalidade, houve aumento importante de ventila\c{c}\~ao, terapia renal substitutiva, dose vasoativa e tempo de perman\^encia. Isso refor\c{c}a a hip\'otese de heterogeneidade: a transfus\~ao pode estar associada a menor mortalidade em parte dos pacientes, mas tamb\'em a maior carga de suporte org\^anico em outros.
+
+\section{Resultados orientados pelo artigo: K=2}
+
+No artigo anterior, a solu\c{c}\~ao com $K=2$ foi interpretada como dois macrofen\'otipos. Na etapa atual, esses dois grupos foram mantidos como leitura orientada pelo artigo: um grupo de benef\'icio relativo e outro de maior risco/carga de suporte.
+
+\begin{table}[ht]
+\centering
+\caption{Grupos orientados pelo artigo na solu\c{c}\~ao K=2.}
+\begin{tabular}{lrrrr}
+\toprule
+Grupo & $n$ pares & Mortalidade tratados & Mortalidade controles & Efeito \\
+\midrule
+Macrobenef\'icio relativo & 7.085 & 0,357 & 0,423 & -0,066 \\
+Macrorrisco / alto suporte & 2.924 & 0,451 & 0,501 & -0,050 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+O ponto importante \'e que o segundo macrogrupo n\~ao apresentou maior mortalidade nos transfundidos em rela\c{c}\~ao aos controles pareados; ainda assim, ele apresentou carga de suporte org\^anico muito maior. Em particular, o grupo de macrorrisco/alto suporte teve aumento aproximado de 73 horas de ventila\c{c}\~ao, 9,6 pontos percentuais de terapia renal substitutiva, 0,173 na dose m\'axima equivalente de noradrenalina e 776 horas de perman\^encia em UTI.
+
+Assim, em $K=2$, a separa\c{c}\~ao parece capturar principalmente diferen\c{c}a de gravidade e suporte org\^anico, n\~ao apenas dire\c{c}\~ao do efeito sobre mortalidade.
+
+\section{Scan de benef\'icio, neutralidade e malef\'icio}
+
+Para responder melhor \`a pergunta sobre subgrupos com benef\'icio ou malef\'icio, foram avaliadas solu\c{c}\~oes com $K=2,3,5,6$. A solu\c{c}\~ao $K=3$ n\~ao separou bem grupos de malef\'icio: todos os clusters ficaram classificados como benef\'icio aparente. Por isso, $K=3$ deve ser tratado como an\'alise de sensibilidade, n\~ao como solu\c{c}\~ao principal.
+
+As solu\c{c}\~oes $K=5$ e $K=6$ foram mais informativas, pois separaram grupos com benef\'icio aparente, neutralidade e malef\'icio aparente.
+
+\begin{table}[ht]
+\centering
+\caption{Efeito sobre mortalidade por grupos do scan.}
+\begin{tabular}{llrrrr}
+\toprule
+K & Grupo & $n$ pares & Tratados & Controles & Efeito \\
+\midrule
+5 & Benef\'icio aparente & 6.310 & 0,361 & 0,475 & -0,114 \\
+5 & Malef\'icio aparente & 1.813 & 0,461 & 0,391 & +0,069 \\
+5 & Neutro aparente & 1.886 & 0,389 & 0,399 & -0,011 \\
+\midrule
+6 & Benef\'icio aparente & 5.340 & 0,321 & 0,461 & -0,140 \\
+6 & Malef\'icio aparente & 2.836 & 0,499 & 0,447 & +0,052 \\
+6 & Neutro aparente & 1.833 & 0,393 & 0,399 & -0,005 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Esses achados sustentam a hip\'otese principal do projeto: a transfus\~ao n\~ao parece ter efeito homog\^eneo. Na solu\c{c}\~ao $K=5$, o grupo de benef\'icio aparente teve redu\c{c}\~ao de aproximadamente 11,4 pontos percentuais na mortalidade, enquanto o grupo de malef\'icio aparente teve aumento de aproximadamente 6,9 pontos percentuais. Na solu\c{c}\~ao $K=6$, o grupo de benef\'icio aparente teve redu\c{c}\~ao de aproximadamente 14,0 pontos percentuais, enquanto o grupo de malef\'icio aparente teve aumento de aproximadamente 5,2 pontos percentuais.
+
+\section{Suporte org\^anico nos grupos K=5 e K=6}
+
+Al\'em da mortalidade, os grupos tamb\'em diferiram quanto a suporte org\^anico. Na solu\c{c}\~ao $K=6$, o grupo de malef\'icio aparente combinou maior mortalidade com aumento de ventila\c{c}\~ao, terapia renal substitutiva, dose vasoativa m\'axima e perman\^encia em UTI.
+
+\begin{table}[ht]
+\centering
+\caption{Desfechos secund\'arios principais na solu\c{c}\~ao K=6.}
+\begin{tabular}{llrr}
+\toprule
+Grupo & Desfecho & Efeito & Interpreta\c{c}\~ao \\
+\midrule
+Benef\'icio aparente & Mortalidade & -0,140 & menor mortalidade \\
+Benef\'icio aparente & Ventila\c{c}\~ao, h & +28,7 & maior suporte \\
+Benef\'icio aparente & Perman\^encia UTI, h & +265,9 & maior tempo de UTI \\
+\midrule
+Malef\'icio aparente & Mortalidade & +0,052 & maior mortalidade \\
+Malef\'icio aparente & Ventila\c{c}\~ao, h & +40,8 & maior suporte \\
+Malef\'icio aparente & Terapia renal substitutiva & +0,097 & maior suporte renal \\
+Malef\'icio aparente & Noradrenalina eq. m\'axima & +0,089 & maior intensidade vasoativa \\
+Malef\'icio aparente & Perman\^encia UTI, h & +447,1 & maior tempo de UTI \\
+\midrule
+Neutro aparente & Mortalidade & -0,005 & efeito pequeno \\
+Neutro aparente & Ventila\c{c}\~ao, h & +24,6 & maior suporte \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Esse padr\~ao sugere que a mortalidade isolada n\~ao captura toda a heterogeneidade cl\'inica. Mesmo nos grupos classificados como benef\'icio aparente, os pacientes transfundidos podem apresentar maior tempo de suporte org\^anico, possivelmente refletindo maior sobrevida com maior tempo em risco, maior gravidade residual ou confus\~ao n\~ao completamente removida.
+
+\section{Modelos contrafactuais e CATE/ITE}
+
+Tamb\'em foi implementado um modelo contrafactual inicial com dois modelos preditivos: um para estimar $Y(1)$ e outro para estimar $Y(0)$. Esse modelo gerou risco esperado sob transfus\~ao, risco esperado sob n\~ao transfus\~ao e efeito individual estimado:
+
+\[
+ITE_i = \hat{Y}_i(1) - \hat{Y}_i(0).
+\]
+
+O modelo preditivo baseado em gradient boosting apresentou desempenho razo\'avel para mortalidade:
+
+\begin{table}[ht]
+\centering
+\caption{Desempenho preditivo do modelo contrafactual inicial.}
+\begin{tabular}{lrr}
+\toprule
+M\'etrica & Conjunto completo & Teste \\
+\midrule
+AUC & 0,869 & 0,849 \\
+Average precision & 0,780 & 0,732 \\
+Brier score & 0,135 & 0,145 \\
+F1 & 0,673 & 0,637 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Apesar do bom desempenho preditivo, essas estimativas individuais ainda devem ser interpretadas como explorat\'orias. Um modelo pode prever bem o desfecho observado sem necessariamente identificar corretamente o desfecho contrafactual n\~ao observado.
+
+Tamb\'em foi testado um modelo de efeito heterog\^eneo no estilo causal forest. Como bibliotecas especializadas como \texttt{econml} ou \texttt{causalml} n\~ao estavam dispon\'iveis, foi utilizado um fallback com T-learner baseado em gradient boosting. Esse modelo n\~ao reproduziu fortemente os sinais encontrados no scan pareado, sugerindo que os efeitos individuais s\~ao sens\'iveis ao m\'etodo e ainda precisam de valida\c{c}\~ao.
+
+\section{Interpreta\c{c}\~ao cient\'ifica}
+
+Os resultados atuais apontam tr\^es conclus\~oes principais.
+
+Primeiro, a an\'alise global sugere associa\c{c}\~ao entre transfus\~ao e menor mortalidade na popula\c{c}\~ao pareada. No entanto, essa estimativa global esconde heterogeneidade relevante.
+
+Segundo, os grupos derivados do scan em $K=5$ e $K=6$ indicam subpopula\c{c}\~oes com dire\c{c}\~oes opostas de efeito. Isso \'e compat\'ivel com a hip\'otese de que a decis\~ao transfusional deve depender da trajet\'oria fisiol\'ogica pr\'e-interven\c{c}\~ao, e n\~ao apenas de limiares fixos de hemoglobina.
+
+Terceiro, a solu\c{c}\~ao $K=2$ do artigo continua relevante como macrofenotipagem, mas ela parece resumir uma separa\c{c}\~ao cl\'inica ampla entre menor e maior carga de suporte. Para infer\^encia sobre benef\'icio e malef\'icio, as solu\c{c}\~oes $K=5$ e $K=6$ s\~ao mais informativas.
+
+\section{Limita\c{c}\~oes}
+
+As estimativas s\~ao observacionais. Portanto, dependem de ignorabilidade condicional, positividade, consist\^encia, qualidade do pareamento e aus\^encia de confundimento residual. Al\'em disso, os grupos de benef\'icio e malef\'icio foram obtidos por scan explorat\'orio; por isso, devem ser tratados como geradores de hip\'otese, n\~ao como prova confirmat\'oria definitiva.
+
+Outro ponto importante \'e que os metadados da execu\c{c}\~ao importada indicavam \texttt{keep\_post\_t0\_features=true}. Assim, os modelos preditivos e contrafactuais devem ser considerados explorat\'orios at\'e uma execu\c{c}\~ao estritamente pr\'e-$t_0$. A vers\~ao confirmat\'oria deve remover qualquer vari\'avel derivada ap\'os $t_0$ antes de treinar modelos de propens\~ao, CATE ou contrafactual.
+
+\section{Conclus\~ao}
+
+O projeto evoluiu de uma an\'alise de fenotipagem fisiol\'ogica para um pipeline de infer\^encia causal temporal. O principal achado \'e que a transfus\~ao de hem\'acias parece ter associa\c{c}\~oes heterog\^eneas com mortalidade e suporte org\^anico. Em particular, os grupos $K=5$ e $K=6$ revelaram subgrupos com benef\'icio aparente, neutralidade e malef\'icio aparente.
+
+O pr\'oximo passo metodol\'ogico \'e consolidar uma execu\c{c}\~ao confirmat\'oria com vari\'aveis estritamente pr\'e-$t_0$, diagn\'ostico de overlap, balanceamento por grupo, bootstrap, sensibilidade a caliper e compara\c{c}\~ao entre janela de 24 e 48 horas. Essa etapa permitir\'a transformar os achados explorat\'orios em uma an\'alise causal mais robusta.
+
+\end{document}

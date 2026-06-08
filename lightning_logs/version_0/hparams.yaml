@@ -1,0 +1,82 @@
+dataset:
+  name: mimic4_mortality
+  input_size: 11
+  treatment_size: 1
+  output_size: 1
+  static_size: 8
+  treatment_mode: multilabel
+  output_mode: bernoulli
+  max_seq_length: 48
+  min_seq_length: 25
+  projection_horizon: 4
+  autoregressive: true
+  predict_X: true
+  split:
+    val: 0.15
+    test: 0.15
+  seed: 42
+  val_batch_size: 64
+model:
+  name: vcip
+  z_dim: 16
+  lr: 0.001
+  inference:
+    hidden_dim: 32
+    num_layers: 2
+    hiddens_F_mu:
+    - 32
+    hiddens_F_logvar:
+    - 32
+    predict_y_history:
+    - 32
+    do: true
+  generative:
+    hidden_dim: 32
+    treatment_hidden_dim: 16
+    num_layers: 2
+    entropy_lambda: 1.0
+    hiddens_F_mu:
+    - 32
+    hiddens_F_logvar:
+    - 32
+    hiddens_decoder:
+    - 32
+    hidden_action_decoder:
+    - 32
+    hidden_action_decoder_step:
+    - 32
+  auxiliary:
+    hidden_dim: 32
+    num_layers: 2
+    hiddens_G_y:
+    - 32
+    hiddens_G_x:
+    - 32
+exp:
+  seed: 42
+  device: cuda
+  batch_size: 128
+  batch_size_val: 64
+  epochs: 150
+  patience: 25
+  lr: 0.001
+  weight_decay: 1.0e-05
+  dropout: 0.2
+  num_samples: 10
+  weights_ema: true
+  beta: 0.999
+  lambda_X: 0.0
+  lambda_Y: 1.0
+  lambda_kl: 1.0
+  lambda_step: 0.1
+  lambda_action: 1.0
+  lambda_hy: 0.5
+  lambda_reg: 1.0
+  beta_bound: -10.0
+  tau: 4
+  repeats: 5
+  remove_aux: false
+  test: false
+  load_best: true
+  val: true
+  log_dir: my_outputs/mimic4_mortality/vcip/42/

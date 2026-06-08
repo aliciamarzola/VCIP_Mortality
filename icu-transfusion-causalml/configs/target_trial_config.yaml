@@ -1,0 +1,89 @@
+target_trial:
+  output_dir: outputs/target_trial
+  source: auto
+  allow_synthetic_fallback: true
+  synthetic_n: 600
+  seed: 42
+
+  eligibility:
+    hemoglobin_col: hemoglobin
+    hemoglobin_threshold: 8.0
+    min_age: 18
+    min_pre_hours: 6
+    lookback_hours: 48
+
+  time_zero:
+    time_col: time_min
+    id_col: stay_id
+    subject_col: subject_id
+
+  treatment:
+    event_col: rbc_transfusion_flag
+    fallback_treatment_col: transfused
+    fallback_treatment_time_col: t0
+    window_hours: 6
+
+  outcomes:
+    primary: mortality_anytime
+    secondary:
+      - ventilation_hours
+      - rrt_on
+      - any_vasopressor
+      - nee_mcgkgmin_max
+      - icu_los_hours
+
+  features:
+    static:
+      - age
+      - sex
+      - bmi
+    temporal:
+      - hemoglobin
+      - lactate
+      - creatinine
+      - platelets
+      - heart_rate
+      - mbp
+      - dbp
+      - sbp
+      - resp_rate
+      - spo2
+      - sofa
+      - any_vasopressor
+      - ventilation_on
+    aggregations:
+      - mean
+      - median
+      - min
+      - max
+      - std
+      - first
+      - last
+      - delta
+      - slope
+      - n
+
+  split:
+    method: random
+    discovery_fraction: 0.70
+
+causal_estimators:
+  propensity_model: gradient_boosting
+  outcome_model: gradient_boosting
+  n_splits: 2
+  ps_clip: 0.02
+  bootstrap: 300
+
+honest_scan:
+  min_n: 150
+  min_treated: 40
+  min_control: 40
+  benefit_threshold: -0.03
+  harm_threshold: 0.03
+  quantiles:
+    - 0.25
+    - 0.50
+    - 0.75
+  max_features: 24
+  max_rules: 80
+  bootstrap: 200

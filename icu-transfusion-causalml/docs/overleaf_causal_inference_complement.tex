@@ -1,0 +1,321 @@
+% =========================================================
+% COMPLEMENTO: INFERÊNCIA CAUSAL TEMPORAL
+% Versão focada apenas no que é central para a narrativa:
+% (1) macrofenótipos K=2 do artigo;
+% (2) scan clínico B/M de benefício e malefício.
+% =========================================================
+
+\providecommand{\pp}{\,\text{pp}}
+\providecommand{\h}{\,\text{h}}
+\providecommand{\mcgkgmin}{\,\text{mcg/kg/min}}
+\providecommand{\code}[1]{\texttt{#1}}
+
+\section{Complemento metodológico: inferência causal temporal}
+
+\subsection{Objetivo da etapa causal}
+
+A etapa atual transforma o estudo anterior de fenotipagem em uma análise de inferência causal observacional. O artigo anterior identificou macrofenótipos fisiológicos a partir de trajetórias clínicas pré-transfusionais; agora, esses fenótipos são usados para perguntar se a associação entre transfusão de hemácias e mortalidade varia conforme o estado fisiológico do paciente antes da decisão transfusional.
+
+O tratamento continua sendo a transfusão:
+
+\[
+A =
+\begin{cases}
+1, & \text{transfundido},\\
+0, & \text{controle não transfundido}.
+\end{cases}
+\]
+
+O desfecho primário é mortalidade. A pergunta causal é expressa em termos de desfechos potenciais:
+
+\[
+Y(1) = \text{desfecho caso o paciente fosse transfundido},
+\]
+
+\[
+Y(0) = \text{desfecho caso o paciente não fosse transfundido}.
+\]
+
+Como a análise parte de pacientes transfundidos comparados a controles pareados, o estimando principal é o efeito médio do tratamento nos tratados:
+
+\[
+ATT_g = E\{Y(1)-Y(0)\mid A=1, G=g\},
+\]
+
+em que $G=g$ representa o macrofenótipo ou o subgrupo clínico identificado pelo scan.
+
+\begin{boxsummary}
+Em termos práticos, a análise estima, dentro de cada grupo fisiológico, se pacientes transfundidos tiveram mortalidade maior ou menor que controles pareados clinicamente comparáveis.
+\end{boxsummary}
+
+\subsection{Por que isso é inferência causal e não apenas clusterização}
+
+A clusterização do artigo anterior foi usada para descobrir estrutura fisiológica latente. A inferência causal entra depois, quando comparamos transfundidos e controles dentro desses grupos.
+
+A sequência conceitual é:
+
+\[
+\text{trajetória pré-}t_0
+\rightarrow
+\text{embedding fisiológico}
+\rightarrow
+\text{macrofenótipo / scan}
+\rightarrow
+\text{efeito da transfusão}.
+\]
+
+Assim, o cluster ou o grupo do scan não é o tratamento. O tratamento é a transfusão. O grupo fisiológico define a subpopulação na qual o efeito da transfusão é estimado.
+
+\subsection{Ponto de decisão temporal}
+
+O ponto de decisão $t_0$ foi definido como o instante da primeira transfusão nos pacientes tratados. Para os controles, foi utilizado um pseudo-$t_0$ compatível com a distribuição temporal dos tratados. A janela fisiológica principal considerada foi de 48 horas antes de $t_0$.
+
+O desenho causal ideal exige que as variáveis usadas na estimação pertençam ao período pré-intervenção:
+
+\[
+X_{\text{pre}} = \{X_t: t < t_0\}.
+\]
+
+Portanto, a estrutura temporal desejada é:
+
+\[
+X_{\text{pre}} \longrightarrow A \longrightarrow Y.
+\]
+
+\begin{boxsummary}
+Nota de cautela: a execução reaproveitada indicava \code{keep\_post\_t0\_features=true}. Por isso, os resultados atuais devem ser apresentados como exploração causal baseada nos artefatos do artigo. A versão confirmatória deve remover estritamente qualquer variável derivada após $t_0$.
+\end{boxsummary}
+
+\subsection{Hipóteses necessárias para interpretação causal}
+
+Para interpretar a diferença pareada como efeito causal, são necessárias hipóteses fortes:
+
+\begin{itemize}[leftmargin=1.5em, itemsep=0.25em]
+  \item \textbf{Consistência:} o desfecho observado corresponde ao desfecho potencial sob o tratamento recebido.
+  \item \textbf{Ignorabilidade condicional:} após ajustar por covariáveis, gravidade e trajetória fisiológica, não há confundidor não medido que determine simultaneamente transfusão e mortalidade.
+  \item \textbf{Positividade:} dentro de cada grupo, existem pacientes comparáveis transfundidos e não transfundidos.
+  \item \textbf{Ausência de vazamento temporal:} informações após $t_0$ não devem entrar nas variáveis usadas para estimar o efeito.
+  \item \textbf{Comparabilidade clínica:} o pareamento deve aproximar tratados e controles em fatores de gravidade e indicação transfusional.
+\end{itemize}
+
+Em UTI, a hipótese mais frágil é a ignorabilidade condicional, pois a decisão transfusional pode depender de sangramento ativo, julgamento clínico, instabilidade aguda, procedimentos e metas específicas de hemoglobina não totalmente medidas. Por isso, os resultados devem ser descritos como \textbf{inferência causal observacional exploratória}.
+
+\section{População e resultado global}
+
+A coorte importada do pipeline de fenotipagem continha 40.167 internações em UTI, sendo 10.639 transfundidas e 29.528 controles. A estimativa pareada principal utilizou 10.009 pares tratados-controles.
+
+\begin{table}[ht]
+\centering
+\caption{Resumo da população analisada.}
+\begin{tabular}{lr}
+\toprule
+Componente & Valor \\
+\midrule
+Internações totais & 40.167 \\
+Transfundidos & 10.639 \\
+Controles & 29.528 \\
+Pares pareados & 10.009 \\
+Janela temporal & 48 h \\
+Representação temporal & MiniRocket \\
+Desfecho primário & Mortalidade \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Na população pareada completa, a mortalidade foi menor nos transfundidos:
+
+\[
+\widehat{ATT}_{global}
+= 0{,}385 - 0{,}446
+= -0{,}061.
+\]
+
+Isso corresponde a uma diferença de aproximadamente $-6{,}1\pp$.
+
+\begin{table}[ht]
+\centering
+\caption{Estimativa global pareada.}
+\begin{tabular}{lrrrrr}
+\toprule
+Desfecho & Pares & Transfundidos & Controles & Diferença & IC95\% \\
+\midrule
+Mortalidade & 10.009 & 0,385 & 0,446 & -0,061 & [-0,075;\,-0,047] \\
+Ventilação & 10.009 & 64,3 h & 32,9 h & +31,4 h & [+29,0;\,+33,9] \\
+RRT & 10.009 & 0,104 & 0,065 & +0,039 & [+0,032;\,+0,047] \\
+Noradrenalina eq. máx. & 10.009 & 0,265 & 0,200 & +0,065 & [+0,031;\,+0,111] \\
+Permanência UTI & 10.009 & 732,8 h & 421,4 h & +311,4 h & [+291,9;\,+330,9] \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+O resultado global sugere menor mortalidade associada à transfusão, mas também maior carga de suporte orgânico. Portanto, o efeito global não deve ser interpretado como homogêneo. Ele mistura pacientes potencialmente beneficiados, pacientes neutros e pacientes em que a transfusão pode ser marcador de gravidade ou estar associada a pior prognóstico.
+
+\section{Camada principal do artigo: macrofenótipos K=2}
+
+A solução $K=2$ é a camada central herdada do artigo anterior. Ela resume os pacientes em dois macrofenótipos fisiológicos: um grupo com benefício relativo e outro com maior carga de suporte orgânico.
+
+\begin{table}[ht]
+\centering
+\caption{Efeito sobre mortalidade nos macrofenótipos K=2.}
+\begin{tabular}{lrrrrr}
+\toprule
+Macrofenótipo & Pares & Transfundidos & Controles & Diferença & IC95\% \\
+\midrule
+Benefício relativo & 7.085 & 0,357 & 0,423 & -0,066 & [-0,081;\,-0,049] \\
+Alto suporte / risco & 2.924 & 0,451 & 0,501 & -0,050 & [-0,077;\,-0,024] \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+A interpretação do $K=2$ é importante porque ele organiza a narrativa fisiológica do artigo. O primeiro macrofenótipo concentra pacientes com menor carga de suporte e sinal de benefício relativo. O segundo macrofenótipo não apresentou aumento de mortalidade nos transfundidos, mas apresentou grande aumento de suporte orgânico: aproximadamente $+73{,}3\h$ de ventilação, $+9{,}6\pp$ de RRT, $+0{,}173\mcgkgmin$ de noradrenalina equivalente máxima e $+776{,}2\h$ de permanência em UTI.
+
+\begin{boxsummary}
+Assim, $K=2$ deve ser apresentado como macrofenotipagem clínica do artigo: ele mostra que existe heterogeneidade fisiológica relevante, mas não é a camada mais fina para nomear benefício ou malefício.
+\end{boxsummary}
+
+\section{Camada refinada: scan de benefício e malefício}
+
+O scan foi usado para refinar a interpretação dos macrofenótipos. Em vez de discutir escolhas alternativas de clusterização, a análise relevante aqui é o resultado clínico do scan: identificação de subgrupos com sinal favorável ou desfavorável de mortalidade.
+
+O critério básico foi:
+
+\[
+\text{diff\_mort}
+=
+\text{Mort}_{\text{transfundido}}
+-
+\text{Mort}_{\text{controle}}.
+\]
+
+\begin{itemize}[leftmargin=1.5em, itemsep=0.25em]
+  \item $\text{diff\_mort}<0$: sinal de benefício associativo.
+  \item $\text{diff\_mort}>0$: sinal de malefício ou risco associativo.
+\end{itemize}
+
+\subsection{Subgrupos com sinal de benefício}
+
+\begin{table}[ht]
+\centering
+\caption{Subgrupos do scan com sinal favorável.}
+\begin{tabular}{llrrr}
+\toprule
+Grupo & Leitura clínica resumida & $n$ total & $n$ repr. & Diferença repr. \\
+\midrule
+B1 & Perfundido amplo / baixa taquicardia & 5.476 & 1.401 & -22,48 pp \\
+B2 & Anemia dinâmica / oxigenação estável & 2.585 & 1.033 & -33,59 pp \\
+B3 & Estresse metabólico com perfusão preservada & 1.921 & 921 & -32,46 pp \\
+B4 & Pressão média elevada / contexto neurovascular & 1.369 & 979 & -31,97 pp \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Os grupos B compartilham uma hipótese fisiológica: a transfusão parece ocorrer em pacientes nos quais a oferta de oxigênio pode estar limitada, mas sem assinatura dominante de falência orgânica irreversível. A leitura clínica mais plausível é de pacientes \textbf{DO$_2$-limitados}, com anemia corrigível, oxigenação relativamente preservada ou contexto vascular/neurovascular sensível à anemia.
+
+\begin{boxbenefit}{Interpretação causal dos grupos B}
+Os grupos B não provam benefício causal definitivo, mas concentram subpopulações nas quais a diferença pareada favorece os transfundidos. A hipótese é que, nesses pacientes, a transfusão esteja mais alinhada à correção de oferta de oxigênio do que à resposta tardia a falência orgânica avançada.
+\end{boxbenefit}
+
+\subsection{Subgrupos com sinal de malefício}
+
+\begin{table}[ht]
+\centering
+\caption{Subgrupos do scan com sinal desfavorável.}
+\begin{tabular}{llrrr}
+\toprule
+Grupo & Leitura clínica resumida & $n$ total & $n$ repr. & Diferença repr. \\
+\midrule
+M1 & Falência hepatobiliar / estresse metabólico & 654 & 654 & +26,61 pp \\
+M2 & Doença crítica sustentada hepatobiliar-renal & 1.129 & 1.129 & +25,86 pp \\
+M3 & Baixo fluxo cardiorrenal / DBP baixa & 913 & 913 & +24,32 pp \\
+M4 & Falência progressiva renal-metabólica & 753 & 753 & +23,24 pp \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Os grupos M compartilham assinatura de gravidade avançada: disfunção hepatobiliar, disfunção renal, baixo fluxo, lactato em piora, necessidade de suporte e maior probabilidade de transfusão como marcador de trajetória crítica.
+
+\begin{boxharm}{Interpretação causal dos grupos M}
+Os grupos M indicam maior mortalidade ou pior prognóstico entre transfundidos pareados. A interpretação principal é confusão por indicação e marcador de gravidade, mas existe plausibilidade de dano em subcenários de congestão, sobrecarga, inflamação ou falência orgânica avançada.
+\end{boxharm}
+
+\section{Como K=2 e scan se complementam}
+
+A leitura final deve combinar as duas camadas:
+
+\begin{itemize}[leftmargin=1.5em, itemsep=0.25em]
+  \item \textbf{K=2} fornece a macroestrutura fisiológica do artigo: pacientes mais compensados versus pacientes de maior suporte e complexidade.
+  \item \textbf{Scan} fornece a tradução clínica fina: grupos B com sinal favorável e grupos M com sinal desfavorável.
+\end{itemize}
+
+Em outras palavras, $K=2$ mostra que há heterogeneidade fisiológica relevante; o scan mostra quais padrões específicos dentro dessa heterogeneidade parecem concentrar benefício ou risco.
+
+\begin{boxsummary}
+A conclusão central é que a transfusão de hemácias não deve ser analisada como intervenção homogênea. O sinal associado à transfusão depende do estado fisiológico pré-intervenção: perfis DO$_2$-limitados parecem concentrar sinal favorável, enquanto perfis de falência orgânica avançada ou baixo fluxo cardiorrenal concentram sinal desfavorável.
+\end{boxsummary}
+
+\section{Modelos contrafactuais individuais}
+
+Além do pareamento e do scan, foi implementado um modelo contrafactual inicial com dois modelos preditivos:
+
+\[
+\hat{Y}_i(1)=f_1(X_i),
+\qquad
+\hat{Y}_i(0)=f_0(X_i).
+\]
+
+O efeito individual estimado foi:
+
+\[
+\widehat{ITE}_i = \hat{Y}_i(1)-\hat{Y}_i(0).
+\]
+
+Esse modelo estima, para cada paciente, o risco esperado sob transfusão e sob não transfusão. O desempenho preditivo para mortalidade foi:
+
+\begin{table}[ht]
+\centering
+\caption{Desempenho preditivo do modelo contrafactual inicial.}
+\begin{tabular}{lrr}
+\toprule
+Métrica & Completo & Teste \\
+\midrule
+AUC & 0,869 & 0,849 \\
+Average precision & 0,780 & 0,732 \\
+Brier score & 0,135 & 0,145 \\
+Acurácia & 0,808 & 0,789 \\
+F1 & 0,673 & 0,637 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Esse resultado mostra que as covariáveis fisiológicas têm capacidade preditiva razoável para mortalidade. Entretanto, boa predição não garante validade causal do contrafactual. O modelo deve ser usado como análise exploratória e geração de hipóteses individuais, não como regra clínica.
+
+\section{Limitações}
+
+\begin{enumerate}[leftmargin=1.5em, itemsep=0.3em]
+  \item \textbf{Confusão por indicação:} pacientes transfundidos podem ter sangramento, instabilidade, procedimento ou julgamento clínico não completamente capturado.
+  \item \textbf{Vazamento temporal potencial:} a execução reaproveitada manteve algumas features pós-$t_0$; a análise confirmatória deve usar apenas variáveis pré-$t_0$.
+  \item \textbf{Scan exploratório:} os grupos B/M foram descobertos nos próprios dados e precisam de validação.
+  \item \textbf{Overlap:} alguns subgrupos podem ter controles comparáveis limitados.
+  \item \textbf{Desfechos de suporte:} maior ventilação ou permanência pode refletir dano, maior sobrevida ou gravidade residual.
+  \item \textbf{Contrafactual não observado:} $Y(1)$ e $Y(0)$ nunca são observados simultaneamente no mesmo paciente.
+\end{enumerate}
+
+\section{Próxima análise confirmatória}
+
+A etapa confirmatória deve manter a narrativa focada em $K=2$ e scan, mas reforçar a validade causal:
+
+\begin{enumerate}[leftmargin=1.5em, itemsep=0.25em]
+  \item reconstruir features estritamente pré-$t_0$;
+  \item recalcular propensity score e pareamento dentro dos macrofenótipos e dos grupos B/M;
+  \item reportar SMD antes e depois do ajuste;
+  \item avaliar overlap por grupo;
+  \item repetir bootstrap para os efeitos B/M;
+  \item testar sensibilidade a caliper e à janela temporal;
+  \item verificar se os grupos B/M mantêm direção em split temporal ou coorte externa.
+\end{enumerate}
+
+\section{Frase-síntese para discussão}
+
+\begin{quote}
+Nesta análise observacional pareada, a transfusão de hemácias apresentou associação heterogênea com mortalidade. O macrofenótipo $K=2$ confirmou a existência de dois estados fisiológicos amplos, enquanto o scan refinou essa heterogeneidade em subgrupos com sinal favorável e desfavorável. Os grupos B sugerem perfis potencialmente DO$_2$-limitados, nos quais a transfusão pode estar associada a menor mortalidade; os grupos M sugerem perfis de falência orgânica avançada ou baixo fluxo cardiorrenal, nos quais a transfusão pode refletir gravidade extrema e se associar a pior prognóstico.
+\end{quote}

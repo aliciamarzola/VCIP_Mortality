@@ -1,0 +1,64 @@
+project:
+  name: rbc_transfusion_causal_temporal
+  description: Causal machine learning for red blood cell transfusion in ICU patients
+  language: pt-BR
+
+run:
+  seed: 42
+  data_source: synthetic  # synthetic, real, or auto
+  allow_synthetic_fallback: true
+  synthetic_n_stays: 400
+  synthetic_time_step_minutes: 60
+
+cohort:
+  adult_min_age: 18
+  first_icu_stay_only: true
+  min_observation_hours: 24
+  decision_window_hours: 48
+  pseudo_t0_strategy: median_treated_offset
+
+columns:
+  id: stay_id
+  subject_id: subject_id
+  time: time_min
+  treatment: rbc_transfusion_flag
+  treatment_name: transfused
+  primary_outcome: mortality_anytime
+
+variables:
+  static:
+    - age
+    - sex
+    - bmi
+  temporal:
+    - hemoglobin
+    - lactate
+    - creatinine
+    - platelets
+    - heart_rate
+    - mbp
+    - resp_rate
+    - spo2
+    - sofa
+    - any_vasopressor
+    - ventilation_on
+  outcomes:
+    primary:
+      - mortality_anytime
+    secondary:
+      - vm_time_hours
+      - ventilation_hours
+      - any_vasopressor
+      - nee_mcgkgmin_max
+      - rrt_on
+      - icu_los_hours
+
+preprocessing:
+  window_hours: 48
+  time_step_minutes: 60
+  imputation:
+    strategy: median_then_locf
+    create_missingness_mask: true
+  normalization:
+    method: zscore
+    train_fraction: 0.8

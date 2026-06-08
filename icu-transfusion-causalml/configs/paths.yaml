@@ -1,0 +1,15 @@
+paths:
+  data_dir: dataset
+  timegrid_dir: dataset/timegrid_features
+  outcomes_file: dataset/outputs_outcomes/outcomes_by_stay_full.csv
+  processed_dir: outputs/causal_inference/processed
+  phenotypes_dir: outputs/causal_inference/phenotypes
+  causal_dir: outputs/causal_inference/causal
+  counterfactual_dir: outputs/causal_inference/counterfactual
+  evaluation_dir: outputs/causal_inference/evaluation
+  figures_dir: outputs/causal_inference/figures
+  logs_dir: outputs/causal_inference/logs
+  report_file: outputs/causal_inference/reports/research_report.md
+  scan_group_report_file: outputs/causal_inference/reports/scan_group_inference_report.md
+  audit_file: outputs/causal_inference/reports/repository_audit.md
+  phenotype_construction_dir: outputs/phenotype_construction
